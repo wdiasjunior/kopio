@@ -6,6 +6,13 @@
 
 int main(int argc, char *argv[])
 {
+    // An AppImage cannot load the host's platform theme plugins (e.g. KDE's),
+    // so default to the bundled XDG portal theme: native file dialogs and the
+    // desktop's dark/light scheme on any DE. Respect an explicit user choice.
+    if (!qEnvironmentVariableIsEmpty("APPIMAGE") &&
+        qEnvironmentVariableIsEmpty("QT_QPA_PLATFORMTHEME"))
+        qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
+
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("kopio"));
     QCoreApplication::setOrganizationName(QStringLiteral("kopio"));
