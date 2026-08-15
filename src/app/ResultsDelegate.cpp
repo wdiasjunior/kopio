@@ -84,8 +84,8 @@ void ResultsDelegate::paint(QPainter *p, const QStyleOptionViewItem &option,
         default: iconName = QStringLiteral("image-missing"); break;
         }
         QIcon icon = QIcon::fromTheme(iconName);
-        if (icon.isNull())
-            icon = QIcon::fromTheme(QStringLiteral("text-plain"));
+        if (icon.isNull()) // no icon theme available (e.g. inside an AppImage)
+            icon = QApplication::style()->standardIcon(QStyle::SP_FileIcon);
         // keep theme icons at a crisp native size instead of stretching
         const QRect iconRect(thumbArea.center().x() - 32,
                              thumbArea.center().y() - 32, 64, 64);

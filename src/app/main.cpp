@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QDir>
+#include <QIcon>
 #include <QTimer>
 
 #include "MainWindow.h"
@@ -14,6 +15,11 @@ int main(int argc, char *argv[])
         qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
 
     QApplication app(argc, argv);
+
+    // The portal platform theme doesn't expose an icon theme; borrow the
+    // host's Breeze icons when present so toolbar/file icons aren't blank.
+    if (QIcon::fallbackThemeName().isEmpty())
+        QIcon::setFallbackThemeName(QStringLiteral("breeze"));
     QCoreApplication::setApplicationName(QStringLiteral("kopio"));
     QCoreApplication::setOrganizationName(QStringLiteral("kopio"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.1"));
