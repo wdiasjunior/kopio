@@ -8,7 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Concurrent)
-qt_standard_project_setup()
+if(COMMAND qt_standard_project_setup)
+    qt_standard_project_setup()
+else()
+    set(CMAKE_AUTOMOC ON) # Qt < 6.3 (e.g. Ubuntu 22.04)
+endif()
 
 enable_testing()
 
@@ -52,6 +56,15 @@ qt_add_executable(kopio
 )
 target_include_directories(kopio PRIVATE src/app)
 target_link_libraries(kopio PRIVATE kopio_pipeline Qt6::Widgets Qt6::Concurrent)
+set_target_properties(kopio PROPERTIES WIN32_EXECUTABLE TRUE) # no console window
+
+# ---- install ---------------------------------------------------------------
+include(GNUInstallDirs)
+install(TARGETS kopio kopio-scan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES data/kopio.desktop
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES data/kopio.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 
 # ---- tests -----------------------------------------------------------------
 add_executable(test_core tests/test_core.c)

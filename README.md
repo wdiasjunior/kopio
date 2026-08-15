@@ -48,6 +48,14 @@ series is a credit page, no matter how much it looks like a cover. Color pages
 with normal manga proportions are explicitly protected from the heuristics to
 avoid flagging covers and color spreads.
 
+## Installing
+
+Grab a build from the GitHub releases page: `kopio-x86_64.AppImage` for any
+Linux distro (`chmod +x` and run), or `kopio-windows-x64.zip` for Windows
+(unzip and run `kopio.exe`). Releases are built automatically when a `v*` tag
+is pushed. To install from source: build as below, then `cmake --install
+build` (binaries, desktop entry, and icon).
+
 ## Building
 
 Requires CMake ≥ 3.21, a C11/C++17 compiler, and Qt 6 (Widgets, Gui,

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=kopio
+GenericName=Manga Library Cleaner
+Comment=Find and trash scanlation credit pages and junk files in a manga library
+Exec=kopio
+Icon=kopio
+Terminal=false
+StartupWMClass=kopio
+Categories=Qt;Graphics;Viewer;

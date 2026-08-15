@@ -14,7 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle(QStringLiteral("kopio"));
-    setWindowIcon(QIcon::fromTheme(QStringLiteral("edit-find")));
+    setWindowIcon(QIcon::fromTheme(QStringLiteral("kopio"),
+                                   QIcon::fromTheme(QStringLiteral("edit-find"))));
     resize(1100, 800);
 
     m_stack = new QStackedWidget(this);
