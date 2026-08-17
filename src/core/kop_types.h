@@ -45,7 +45,9 @@ typedef enum {
 #define KOP_R_TITLE_ONLY   (1u << 7)
 #define KOP_R_TEXT_HEAVY   (1u << 8)  /* translation-notes shape */
 #define KOP_R_COLOR_GUARD  (1u << 9)  /* looks like a cover/spread — protected */
-#define KOP_R_FLAT_COLOR   (1u << 10) /* flat color art, few colors, little ink */
+#define KOP_R_FLAT_COLOR   (1u << 10) /* flat color page: too few colors for real art */
+#define KOP_R_DARK_TEXT    (1u << 11) /* dark text-on-black page */
+#define KOP_R_LOW_DETAIL   (1u << 12) /* flat/low-detail page (title cards, logos) */
 
 typedef struct {
     uint32_t width, height;

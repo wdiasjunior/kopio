@@ -31,11 +31,24 @@ void kop_classify_defaults(KopClassifyParams *p)
     p->notes_white_lo = 0.75f;
     p->notes_white_hi = 0.92f;
     p->notes_edge_lo = 0.03f;
-    p->notes_edge_hi = 0.145f;
-    p->flat_colors_max = 120; /* grayscale pages quantize to <=16; color manga
-                                 art lands in the hundreds — flat credit art
-                                 sits in between */
-    p->flat_ink_max = 0.30f;
+    p->notes_edge_hi = 0.08f;
+    /* real manga pages are grayscale (~16 quantized colors), real covers are
+       color-rich; junk lives in the flat/dark/low-detail space between.
+       Thresholds tuned for zero junked keepers on a 568-keeper corpus that
+       includes dark covers, flat-art covers, and low-contrast manga pages —
+       per-image recall is deliberately conservative; repeated credit pages
+       are caught by the frequency signal instead. */
+    p->dark_ink_min = 0.97f;
+    p->dark_edge_max = 0.10f;
+    p->flatcolor_uniq_max = 120;
+    p->flatgray_uniq_max = 16;
+    p->flatgray_edge_max = 0.04f;
+    p->lowdetail_uniq_max = 64;
+    p->lowdetail_edge_max = 0.045f;
+    p->superflat_uniq_max = 250;
+    p->superflat_edge_max = 0.02f;
+    p->blank2_white_min = 0.95f;
+    p->blank2_edge_max = 0.035f;
 }
 
 static int is_image_kind(KopFileKind k)
@@ -109,7 +122,7 @@ int kop_classify(KopRecord *recs, int count, const KopClassifyParams *p)
     for (int i = 0; i < count; i++) {
         if (recs[i].kind == KOP_FMT_NOMEDIA) {
             recs[i].reasons |= KOP_R_NOMEDIA;
-            recs[i].category = recs[i].file_size == 0 ? KOP_CAT_JUNK_FILE : KOP_CAT_REVIEW;
+            recs[i].category = KOP_CAT_JUNK_FILE;
         } else if (recs[i].kind == KOP_FMT_XML) {
             recs[i].reasons |= KOP_R_XML;
             recs[i].category = KOP_CAT_JUNK_FILE;
@@ -265,6 +278,8 @@ int kop_classify(KopRecord *recs, int count, const KopClassifyParams *p)
 
         KopCategory cat = KOP_CAT_CLEAN;
 
+        /* aspect-shape rules: the cover/spread guard applies to these,
+         * since covers and spreads legitimately share their geometry */
         if (aspect >= p->banner_aspect) {
             r->reasons |= KOP_R_WIDE_BANNER;
             cat = (!m->is_color || maxdim <= p->banner_small_dim)
@@ -275,27 +290,46 @@ int kop_classify(KopRecord *recs, int count, const KopClassifyParams *p)
                    m->edge_density < p->square_edge_max)
                       ? KOP_CAT_JUNK_PAGE : KOP_CAT_REVIEW;
         }
+        if (guard && cat == KOP_CAT_JUNK_PAGE) cat = KOP_CAT_REVIEW;
 
-        if (bpp < p->blank_bpp_max &&
-            (m->white_ratio > p->blank_white_min || m->black_ratio > p->blank_black_min)) {
+        /* guard-exempt junk rules, validated directly against covers with
+         * zero false positives on the labeled corpus */
+        if (m->ink_ratio > p->dark_ink_min && m->edge_density < p->dark_edge_max) {
+            r->reasons |= KOP_R_DARK_TEXT;
+            cat = KOP_CAT_JUNK_PAGE;
+        }
+        if (m->is_color && m->unique_colors < p->flatcolor_uniq_max) {
+            r->reasons |= KOP_R_FLAT_COLOR;
+            cat = KOP_CAT_JUNK_PAGE;
+        }
+        if ((!m->is_color && m->unique_colors <= p->flatgray_uniq_max &&
+             m->edge_density < p->flatgray_edge_max) ||
+            (m->edge_density < p->lowdetail_edge_max &&
+             m->unique_colors <= p->lowdetail_uniq_max) ||
+            (m->edge_density < p->superflat_edge_max &&
+             m->unique_colors < p->superflat_uniq_max)) {
+            r->reasons |= KOP_R_LOW_DETAIL;
+            cat = KOP_CAT_JUNK_PAGE;
+        }
+        if ((bpp < p->blank_bpp_max &&
+             (m->white_ratio > p->blank_white_min || m->black_ratio > p->blank_black_min)) ||
+            (m->white_ratio > p->blank2_white_min &&
+             m->edge_density < p->blank2_edge_max)) {
             r->reasons |= KOP_R_BLANK;
-            if (cat != KOP_CAT_JUNK_PAGE) cat = KOP_CAT_JUNK_PAGE;
-        } else if (m->white_ratio > p->title_white_min && m->ink_ratio < p->title_ink_max &&
+            cat = KOP_CAT_JUNK_PAGE;
+        } else if (cat == KOP_CAT_CLEAN &&
+                   m->white_ratio > p->title_white_min && m->ink_ratio < p->title_ink_max &&
                    m->border_white > p->title_border_min && !m->is_color) {
             r->reasons |= KOP_R_TITLE_ONLY;
-            if (cat == KOP_CAT_CLEAN) cat = KOP_CAT_REVIEW;
-        } else if (m->white_ratio >= p->notes_white_lo && m->white_ratio <= p->notes_white_hi &&
+            cat = KOP_CAT_REVIEW;
+        } else if (cat == KOP_CAT_CLEAN &&
+                   m->white_ratio >= p->notes_white_lo && m->white_ratio <= p->notes_white_hi &&
                    m->edge_density >= p->notes_edge_lo && m->edge_density <= p->notes_edge_hi &&
                    r->sim_cluster < 0) {
             r->reasons |= KOP_R_TEXT_HEAVY;
-            if (cat == KOP_CAT_CLEAN) cat = KOP_CAT_REVIEW;
-        } else if (m->is_color && m->unique_colors < p->flat_colors_max &&
-                   m->ink_ratio < p->flat_ink_max) {
-            r->reasons |= KOP_R_FLAT_COLOR;
-            if (cat == KOP_CAT_CLEAN) cat = KOP_CAT_REVIEW;
+            cat = KOP_CAT_REVIEW;
         }
 
-        if (guard && cat == KOP_CAT_JUNK_PAGE) cat = KOP_CAT_REVIEW;
         r->category = cat;
     }
 

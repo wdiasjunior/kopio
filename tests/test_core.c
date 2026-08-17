@@ -111,7 +111,7 @@ static void test_classify(void)
     KopClassifyParams p;
     kop_classify_defaults(&p);
 
-    enum { N = 24 };
+    enum { N = 28 };
     KopRecord r[N];
     memset(r, 0, sizeof r);
     for (int i = 0; i < N; i++) {
@@ -152,6 +152,18 @@ static void test_classify(void)
     /* 23: translation notes: white-heavy, moderate edges, unclustered */
     r[23].m.white_ratio = 0.85f; r[23].m.ink_ratio = 0.10f; r[23].m.edge_density = 0.05f;
 
+    /* 24: .nomedia with junk content must still be a junk file */
+    r[24].kind = KOP_FMT_NOMEDIA; r[24].file_size = 12; r[24].decoded = 0;
+    /* 25: text-on-dark credit page (dark covers stop near ink 0.95) */
+    r[25].m.ink_ratio = 0.98f; r[25].m.white_ratio = 0.02f;
+    r[25].m.edge_density = 0.05f; r[25].m.unique_colors = 700;
+    /* 26: flat-color credit page (real covers have far more colors) */
+    r[26].m.is_color = 1; r[26].m.unique_colors = 100;
+    r[26].m.edge_density = 0.08f; r[26].m.ink_ratio = 0.30f;
+    /* 27: whitewashed blank whose bpp is too high for the old blank rule */
+    r[27].m.white_ratio = 0.97f; r[27].m.ink_ratio = 0.02f;
+    r[27].m.edge_density = 0.01f; r[27].m.unique_colors = 20;
+
     CHECK(kop_classify(r, N, &p) == 0);
 
     CHECK(r[0].category == KOP_CAT_JUNK_FILE && (r[0].reasons & KOP_R_NOMEDIA));
@@ -163,9 +175,13 @@ static void test_classify(void)
     CHECK(r[15].sim_cluster == r[3].sim_cluster && r[3].sim_cluster >= 0);
     CHECK(r[20].category == KOP_CAT_JUNK_PAGE && (r[20].reasons & KOP_R_WIDE_BANNER));
     CHECK(r[21].category == KOP_CAT_JUNK_PAGE && (r[21].reasons & KOP_R_BLANK));
-    CHECK(r[22].category == KOP_CAT_CLEAN);
+    CHECK(r[22].category == KOP_CAT_CLEAN); /* rich color cover stays clean */
     CHECK(r[23].category == KOP_CAT_REVIEW && (r[23].reasons & KOP_R_TEXT_HEAVY));
     CHECK(r[4].category == KOP_CAT_CLEAN); /* ordinary page untouched */
+    CHECK(r[24].category == KOP_CAT_JUNK_FILE && (r[24].reasons & KOP_R_NOMEDIA));
+    CHECK(r[25].category == KOP_CAT_JUNK_PAGE && (r[25].reasons & KOP_R_DARK_TEXT));
+    CHECK(r[26].category == KOP_CAT_JUNK_PAGE && (r[26].reasons & KOP_R_FLAT_COLOR));
+    CHECK(r[27].category == KOP_CAT_JUNK_PAGE && (r[27].reasons & KOP_R_BLANK));
 
     /* idempotent */
     CHECK(kop_classify(r, N, &p) == 0);

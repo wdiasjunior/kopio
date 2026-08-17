@@ -32,8 +32,17 @@ typedef struct {
     float title_white_min, title_ink_max, title_border_min;
     float notes_white_lo, notes_white_hi;     /* translation-notes shape */
     float notes_edge_lo, notes_edge_hi;
-    int   flat_colors_max;                    /* flat color art (credit pages) */
-    float flat_ink_max;
+    /* guard-exempt junk rules, tuned on the labeled corpus with zero
+       false positives on content pages, covers and spreads */
+    float dark_ink_min, dark_edge_max;        /* text-on-dark credit pages */
+    int   flatcolor_uniq_max;                 /* flat-color credit pages */
+    int   flatgray_uniq_max;                  /* gray title/logo cards */
+    float flatgray_edge_max;
+    int   lowdetail_uniq_max;                 /* low-detail pages */
+    float lowdetail_edge_max;
+    int   superflat_uniq_max;                 /* near-featureless pages */
+    float superflat_edge_max;
+    float blank2_white_min, blank2_edge_max;  /* blanks with high bpp */
 } KopClassifyParams;
 
 void kop_classify_defaults(KopClassifyParams *p);

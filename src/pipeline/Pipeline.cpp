@@ -187,7 +187,9 @@ QString reasonsText(uint32_t reasons)
     if (reasons & KOP_R_TITLE_ONLY) parts << QObject::tr("title-only page");
     if (reasons & KOP_R_TEXT_HEAVY) parts << QObject::tr("text-heavy (notes?)");
     if (reasons & KOP_R_COLOR_GUARD) parts << QObject::tr("looks like cover/spread");
-    if (reasons & KOP_R_FLAT_COLOR) parts << QObject::tr("flat color art");
+    if (reasons & KOP_R_FLAT_COLOR) parts << QObject::tr("flat color page");
+    if (reasons & KOP_R_DARK_TEXT) parts << QObject::tr("dark text page");
+    if (reasons & KOP_R_LOW_DETAIL) parts << QObject::tr("flat low-detail page");
     return parts.join(QStringLiteral(", "));
 }
 
