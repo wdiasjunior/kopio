@@ -1,6 +1,9 @@
 # kopio
 
 An app for manga archival workflows.
+
+<img src="ui-readme.png" width="700" />
+
 kopio scans a manga library, finds the files that only waste space, and lets
 you triage them in a thumbnail grid before moving them to the trash:
 
