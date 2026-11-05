@@ -31,6 +31,7 @@ private:
     void deleteChecked();
     void deleteRows(const QVector<int> &sourceRows);
     void onGridClicked(const QModelIndex &proxyIndex);
+    void openPreview(const QModelIndex &sourceIndex);
     QVector<int> checkedVisibleSourceRows() const;
 
     ResultsModel *m_model = nullptr;

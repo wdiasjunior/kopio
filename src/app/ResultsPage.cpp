@@ -111,6 +111,13 @@ ResultsPage::ResultsPage(QWidget *parent)
     m_view->setModel(m_proxy);
     m_view->setItemDelegate(new ResultsDelegate(this));
     connect(m_view, &QListView::clicked, this, &ResultsPage::onGridClicked);
+    // right click on a card opens its preview
+    m_view->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_view, &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        const QModelIndex proxyIndex = m_view->indexAt(pos);
+        if (proxyIndex.isValid())
+            openPreview(m_proxy->mapToSource(proxyIndex));
+    });
     layout->addWidget(m_view, 1);
 
     // ---- status line + action bar ----
@@ -175,12 +182,7 @@ void ResultsPage::setEntries(const QVector<KopEntry> &entries)
 
     // test hook: KOPIO_PREVIEW=1 opens the first visible item's preview
     if (qEnvironmentVariableIntValue("KOPIO_PREVIEW") && m_proxy->rowCount() > 0) {
-        const QModelIndex src = m_proxy->mapToSource(m_proxy->index(0, 0));
-        m_preview->showEntry(src.row(),
-                             src.data(ResultsModel::PathRole).toString(),
-                             src.data(ResultsModel::ChapterLabelRole).toString(),
-                             src.data(ResultsModel::ReasonsTextRole).toString(),
-                             src.data(ResultsModel::IsImageRole).toBool());
+        openPreview(m_proxy->mapToSource(m_proxy->index(0, 0)));
     }
 }
 
@@ -306,12 +308,17 @@ void ResultsPage::onGridClicked(const QModelIndex &proxyIndex)
 {
     const QModelIndex src = m_proxy->mapToSource(proxyIndex);
     if (QGuiApplication::keyboardModifiers() & Qt::ControlModifier) {
-        m_preview->showEntry(src.row(),
-                             src.data(ResultsModel::PathRole).toString(),
-                             src.data(ResultsModel::ChapterLabelRole).toString(),
-                             src.data(ResultsModel::ReasonsTextRole).toString(),
-                             src.data(ResultsModel::IsImageRole).toBool());
+        openPreview(src);
         return;
     }
     m_model->setChecked(src.row(), !m_model->isChecked(src.row()));
+}
+
+void ResultsPage::openPreview(const QModelIndex &src)
+{
+    m_preview->showEntry(src.row(),
+                         src.data(ResultsModel::PathRole).toString(),
+                         src.data(ResultsModel::ChapterLabelRole).toString(),
+                         src.data(ResultsModel::ReasonsTextRole).toString(),
+                         src.data(ResultsModel::IsImageRole).toBool());
 }

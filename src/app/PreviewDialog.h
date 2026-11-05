@@ -1,4 +1,5 @@
-// Enlarged preview of a single item, opened with Ctrl+click on the grid.
+// Enlarged preview of a single item, opened with right click (or Ctrl+click)
+// on the grid; right click on the enlarged image closes it.
 #pragma once
 
 #include <QDialog>

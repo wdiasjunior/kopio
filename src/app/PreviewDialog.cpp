@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QImageReader>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QVBoxLayout>
@@ -26,6 +27,8 @@ PreviewDialog::PreviewDialog(QWidget *parent)
     m_scroll->setWidget(m_image);
     // rescale whenever the viewport gets its real size (first layout, resizes)
     m_scroll->viewport()->installEventFilter(this);
+    // right click on the enlarged image closes the preview
+    m_image->installEventFilter(this);
     layout->addWidget(m_scroll, 1);
 
     m_caption = new QLabel(this);
@@ -83,6 +86,12 @@ void PreviewDialog::showEntry(int sourceRow, const QString &path, const QString 
 
 bool PreviewDialog::eventFilter(QObject *watched, QEvent *ev)
 {
+    if ((watched == m_image || watched == m_scroll->viewport()) &&
+        ev->type() == QEvent::MouseButtonPress &&
+        static_cast<QMouseEvent *>(ev)->button() == Qt::RightButton) {
+        reject();
+        return true;
+    }
     if (watched == m_scroll->viewport() && ev->type() == QEvent::Resize)
         updateScaled();
     return QDialog::eventFilter(watched, ev);
