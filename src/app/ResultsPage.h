@@ -1,6 +1,7 @@
 // Triage screen: filter chips, sortable thumbnail grid, and the action bar.
 #pragma once
 
+#include <QPersistentModelIndex>
 #include <QWidget>
 
 #include "Pipeline.h"
@@ -41,4 +42,6 @@ private:
     QLabel *m_statusLine = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QVector<QToolButton *> m_chips; // indexed by KopBucket
+    // last plain-clicked card (source model) for Shift+click range select
+    QPersistentModelIndex m_anchor;
 };

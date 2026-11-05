@@ -175,6 +175,7 @@ ResultsPage::ResultsPage(QWidget *parent)
 
 void ResultsPage::setEntries(const QVector<KopEntry> &entries)
 {
+    m_anchor = QPersistentModelIndex();
     m_model->setEntries(entries);
     m_proxy->setSortMode(KopSortFilterProxy::SortMode::Content);
     updateChips();
@@ -311,7 +312,25 @@ void ResultsPage::onGridClicked(const QModelIndex &proxyIndex)
         openPreview(src);
         return;
     }
+    // Shift+click: give every card between the anchor and this one (in the
+    // order shown) the anchor's state, like range selection in a file manager
+    const QModelIndex anchorProxy =
+        m_anchor.isValid() ? m_proxy->mapFromSource(m_anchor) : QModelIndex();
+    if ((QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) &&
+        anchorProxy.isValid()) {
+        const bool on = m_model->isChecked(m_anchor.row());
+        const int lo = qMin(anchorProxy.row(), proxyIndex.row());
+        const int hi = qMax(anchorProxy.row(), proxyIndex.row());
+        // collect first: in the Selected chip, unchecking removes rows mid-loop
+        QVector<int> rows;
+        for (int i = lo; i <= hi; i++)
+            rows.append(m_proxy->mapToSource(m_proxy->index(i, 0)).row());
+        for (int row : rows)
+            m_model->setChecked(row, on);
+        return;
+    }
     m_model->setChecked(src.row(), !m_model->isChecked(src.row()));
+    m_anchor = src;
 }
 
 void ResultsPage::openPreview(const QModelIndex &src)
