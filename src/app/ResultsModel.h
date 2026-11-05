@@ -55,6 +55,7 @@ public:
     int countInBucket(KopBucket b) const;
     qint64 checkedBytes() const;
     int checkedCount() const;
+    QVector<int> checkedRows() const; // every checked row, regardless of bucket
 
     void setChecked(int row, bool on);
     bool isChecked(int row) const;

@@ -247,7 +247,8 @@ void ResultsPage::applyStatusToChecked(KopUserStatus st)
 
 void ResultsPage::deleteChecked()
 {
-    deleteRows(checkedVisibleSourceRows());
+    // trash everything checked, across all buckets, not just the current chip
+    deleteRows(m_model->checkedRows());
 }
 
 void ResultsPage::deleteRows(const QVector<int> &sourceRows)

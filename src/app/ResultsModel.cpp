@@ -166,6 +166,15 @@ int ResultsModel::checkedCount() const
     return n;
 }
 
+QVector<int> ResultsModel::checkedRows() const
+{
+    QVector<int> rows;
+    for (int i = 0; i < m_items.size(); i++)
+        if (m_items[i].check == Qt::Checked)
+            rows.append(i);
+    return rows;
+}
+
 void ResultsModel::setChecked(int row, bool on)
 {
     if (row < 0 || row >= m_items.size())
