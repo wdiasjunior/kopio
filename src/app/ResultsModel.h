@@ -19,6 +19,7 @@ enum class KopBucket {
     Review,
     Allowed,
     Clean,
+    Selected, // every checked item, whatever its bucket
     Count
 };
 

@@ -119,7 +119,9 @@ bool ResultsModel::setData(const QModelIndex &index, const QVariant &value, int 
     if (!index.isValid() || role != Qt::CheckStateRole)
         return false;
     m_items[index.row()].check = static_cast<Qt::CheckState>(value.toInt());
-    emit dataChanged(index, index, { Qt::CheckStateRole });
+    // no role list: the proxy must re-run its filter, since the Selected
+    // chip filters on check state
+    emit dataChanged(index, index);
     emit countsChanged();
     return true;
 }
@@ -139,6 +141,8 @@ KopBucket ResultsModel::bucketOf(int row) const
 
 int ResultsModel::countInBucket(KopBucket b) const
 {
+    if (b == KopBucket::Selected)
+        return checkedCount();
     int n = 0;
     for (int i = 0; i < m_items.size(); i++) {
         const KopBucket ib = bucketOf(i);
@@ -250,6 +254,8 @@ void KopSortFilterProxy::setSortMode(SortMode m)
 bool KopSortFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &parent) const
 {
     const QModelIndex ix = sourceModel()->index(sourceRow, 0, parent);
+    if (m_bucket == KopBucket::Selected)
+        return ix.data(Qt::CheckStateRole).toInt() == Qt::Checked;
     const auto b = static_cast<KopBucket>(ix.data(ResultsModel::BucketRole).toInt());
     if (m_bucket == KopBucket::AllFlagged)
         return b != KopBucket::Clean;

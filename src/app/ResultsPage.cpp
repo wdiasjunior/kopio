@@ -30,6 +30,7 @@ const char *bucketLabel(KopBucket b)
     case KopBucket::Review: return QT_TRANSLATE_NOOP("ResultsPage", "Needs review");
     case KopBucket::Allowed: return QT_TRANSLATE_NOOP("ResultsPage", "Allowed");
     case KopBucket::Clean: return QT_TRANSLATE_NOOP("ResultsPage", "Clean");
+    case KopBucket::Selected: return QT_TRANSLATE_NOOP("ResultsPage", "Selected");
     default: return "";
     }
 }
@@ -204,10 +205,13 @@ void ResultsPage::updateStatusLine()
 
 void ResultsPage::selectAllVisible(bool checked)
 {
-    for (int i = 0; i < m_proxy->rowCount(); i++) {
-        const QModelIndex src = m_proxy->mapToSource(m_proxy->index(i, 0));
-        m_model->setChecked(src.row(), checked);
-    }
+    // collect first: in the Selected chip, unchecking removes rows from the
+    // proxy mid-loop and would skip every other item
+    QVector<int> rows;
+    for (int i = 0; i < m_proxy->rowCount(); i++)
+        rows.append(m_proxy->mapToSource(m_proxy->index(i, 0)).row());
+    for (int row : rows)
+        m_model->setChecked(row, checked);
 }
 
 QVector<int> ResultsPage::checkedVisibleSourceRows() const
