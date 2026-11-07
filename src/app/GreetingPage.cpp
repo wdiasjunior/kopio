@@ -1,6 +1,7 @@
 #include "GreetingPage.h"
 
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -73,14 +74,34 @@ void GreetingPage::reset()
 
 void GreetingPage::chooseDirectory()
 {
-    const QString start = m_dir.isEmpty()
-        ? QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
-        : m_dir;
-    const QString dir = QFileDialog::getExistingDirectory(
-        this, tr("Choose the manga library folder"), start);
+    QFileDialog dialog(this, tr("Choose the manga library folder"));
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly);
+
+    if (!m_dir.isEmpty()) {
+        dialog.setDirectory(m_dir);
+    } else if (!m_lastDir.isEmpty()) {
+        // Open in the parent with the previous folder highlighted, so its
+        // neighbours are one click away.
+        const QString parent = QFileInfo(m_lastDir).absolutePath();
+        if (QFileInfo(parent).isDir()) {
+            dialog.setDirectory(parent);
+            if (QFileInfo(m_lastDir).isDir())
+                dialog.selectFile(m_lastDir);
+        } else {
+            dialog.setDirectory(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+        }
+    } else {
+        dialog.setDirectory(QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+    }
+
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty())
+        return;
+    const QString dir = dialog.selectedFiles().constFirst();
     if (dir.isEmpty())
         return;
     m_dir = dir;
+    m_lastDir = dir;
     m_pathLabel->setText(tr("Selected: <b>%1</b>").arg(dir.toHtmlEscaped()));
     m_startButton->setVisible(true);
 }
