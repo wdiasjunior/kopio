@@ -9,15 +9,16 @@
 
 #include "Pipeline.h"
 
-// Buckets shown as filter chips. Allowed/Review are user statuses that
-// override the classifier category for display purposes.
+// Buckets shown as filter chips. Review is a user status that overrides the
+// classifier category for display purposes. AllFlagged, Colored and Selected
+// are cross-cutting filters, not buckets an item belongs to.
 enum class KopBucket {
     AllFlagged, // everything except clean
     JunkFiles,
     ExactDupes,
     JunkPages,
     Review,
-    Allowed,
+    Colored, // every color image, whatever its category
     Clean,
     Selected, // every checked item, whatever its bucket
     Count
@@ -50,6 +51,7 @@ public:
         ReasonsTextRole,
         IsImageRole,
         KindRole, // KopFileKind
+        IsColorRole,
     };
 
     explicit ResultsModel(QObject *parent = nullptr);

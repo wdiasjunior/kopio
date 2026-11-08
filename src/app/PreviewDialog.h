@@ -22,7 +22,6 @@ public:
 signals:
     void deleteRequested(int sourceRow);
     void reviewRequested(int sourceRow);
-    void allowRequested(int sourceRow);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *ev) override;

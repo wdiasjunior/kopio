@@ -28,7 +28,7 @@ const char *bucketLabel(KopBucket b)
     case KopBucket::ExactDupes: return QT_TRANSLATE_NOOP("ResultsPage", "Exact dupes");
     case KopBucket::JunkPages: return QT_TRANSLATE_NOOP("ResultsPage", "Junk pages");
     case KopBucket::Review: return QT_TRANSLATE_NOOP("ResultsPage", "Needs review");
-    case KopBucket::Allowed: return QT_TRANSLATE_NOOP("ResultsPage", "Allowed");
+    case KopBucket::Colored: return QT_TRANSLATE_NOOP("ResultsPage", "Colored");
     case KopBucket::Clean: return QT_TRANSLATE_NOOP("ResultsPage", "Clean");
     case KopBucket::Selected: return QT_TRANSLATE_NOOP("ResultsPage", "Selected");
     default: return "";
@@ -146,13 +146,6 @@ ResultsPage::ResultsPage(QWidget *parent)
     connect(deselectAll, &QPushButton::clicked, this, [this] { selectAllVisible(false); });
     actionRow->addWidget(deselectAll);
 
-    auto *allow = new QPushButton(QIcon::fromTheme(QStringLiteral("dialog-ok-apply")),
-                                  tr("Allow"), this);
-    allow->setToolTip(tr("Keep the checked files and stop flagging them"));
-    connect(allow, &QPushButton::clicked, this,
-            [this] { applyStatusToChecked(KOP_ST_ALLOWED); });
-    actionRow->addWidget(allow);
-
     auto *review = new QPushButton(QIcon::fromTheme(QStringLiteral("view-task")),
                                    tr("To review"), this);
     review->setToolTip(tr("Move the checked files to the review list"));
@@ -180,8 +173,6 @@ ResultsPage::ResultsPage(QWidget *parent)
             [this](int row) { deleteRows({ row }); });
     connect(m_preview, &PreviewDialog::reviewRequested, this,
             [this](int row) { m_model->setStatus(row, KOP_ST_REVIEW); updateChips(); });
-    connect(m_preview, &PreviewDialog::allowRequested, this,
-            [this](int row) { m_model->setStatus(row, KOP_ST_ALLOWED); updateChips(); });
 
     connect(m_model, &ResultsModel::countsChanged, this, [this] {
         updateChips();

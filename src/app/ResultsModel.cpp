@@ -10,8 +10,6 @@ using namespace kop_pipeline;
 
 static KopBucket bucketFor(KopCategory cat, KopUserStatus st)
 {
-    if (st == KOP_ST_ALLOWED)
-        return KopBucket::Allowed;
     if (st == KOP_ST_REVIEW)
         return KopBucket::Review;
     switch (cat) {
@@ -21,6 +19,12 @@ static KopBucket bucketFor(KopCategory cat, KopUserStatus st)
     case KOP_CAT_REVIEW: return KopBucket::Review;
     default: return KopBucket::Clean;
     }
+}
+
+// pixel-verified chroma; files that weren't decoded never count as color
+static bool isColored(const KopEntry &e)
+{
+    return e.rec.decoded && e.rec.m.is_color;
 }
 
 ResultsModel::ResultsModel(QObject *parent)
@@ -39,10 +43,15 @@ void ResultsModel::setEntries(const QVector<KopEntry> &entries, const KopPresele
         const KopCategory c = e.rec.category;
         // pre-check per the Settings menu; clean files never arrive checked
         const bool flagged = bucketFor(c, KOP_ST_PENDING) != KopBucket::Clean;
-        const bool on = (pre.allFlagged && flagged) ||
-                        (pre.dupes && c == KOP_CAT_EXACT_DUPE) ||
-                        (pre.junkFiles && c == KOP_CAT_JUNK_FILE) ||
-                        (pre.junkPages && c == KOP_CAT_JUNK_PAGE);
+        bool on = (pre.allFlagged && flagged) ||
+                  (pre.dupes && c == KOP_CAT_EXACT_DUPE) ||
+                  (pre.junkFiles && c == KOP_CAT_JUNK_FILE) ||
+                  (pre.junkPages && c == KOP_CAT_JUNK_PAGE);
+        // color images (covers, spreads) only arrive checked when they were
+        // flagged as junk or duplicate, never just for needing review
+        if (isColored(e) && c != KOP_CAT_JUNK_FILE && c != KOP_CAT_EXACT_DUPE &&
+            c != KOP_CAT_JUNK_PAGE)
+            on = false;
         it.check = on ? Qt::Checked : Qt::Unchecked;
         m_items.append(it);
     }
@@ -112,6 +121,8 @@ QVariant ResultsModel::data(const QModelIndex &index, int role) const
         return e.rec.kind != KOP_FMT_XML && e.rec.kind != KOP_FMT_NOMEDIA;
     case KindRole:
         return static_cast<int>(e.rec.kind);
+    case IsColorRole:
+        return isColored(e);
     default:
         return {};
     }
@@ -147,6 +158,12 @@ int ResultsModel::countInBucket(KopBucket b) const
     if (b == KopBucket::Selected)
         return checkedCount();
     int n = 0;
+    if (b == KopBucket::Colored) {
+        for (const Item &it : m_items)
+            if (isColored(it.e))
+                n++;
+        return n;
+    }
     for (int i = 0; i < m_items.size(); i++) {
         const KopBucket ib = bucketOf(i);
         if (b == KopBucket::AllFlagged ? ib != KopBucket::Clean : ib == b)
@@ -199,7 +216,7 @@ void ResultsModel::setStatus(int row, KopUserStatus st)
     if (row < 0 || row >= m_items.size())
         return;
     m_items[row].status = st;
-    if (st == KOP_ST_ALLOWED || st == KOP_ST_REVIEW)
+    if (st == KOP_ST_REVIEW)
         m_items[row].check = Qt::Unchecked;
     const QModelIndex ix = index(row);
     emit dataChanged(ix, ix);
@@ -259,6 +276,8 @@ bool KopSortFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &pare
     const QModelIndex ix = sourceModel()->index(sourceRow, 0, parent);
     if (m_bucket == KopBucket::Selected)
         return ix.data(Qt::CheckStateRole).toInt() == Qt::Checked;
+    if (m_bucket == KopBucket::Colored)
+        return ix.data(ResultsModel::IsColorRole).toBool();
     const auto b = static_cast<KopBucket>(ix.data(ResultsModel::BucketRole).toInt());
     if (m_bucket == KopBucket::AllFlagged)
         return b != KopBucket::Clean;

@@ -41,8 +41,6 @@ PreviewDialog::PreviewDialog(QWidget *parent)
     del->setIcon(QIcon::fromTheme(QStringLiteral("user-trash")));
     auto *review = buttons->addButton(tr("To Review"), QDialogButtonBox::ActionRole);
     review->setIcon(QIcon::fromTheme(QStringLiteral("view-task")));
-    auto *allow = buttons->addButton(tr("Allow"), QDialogButtonBox::ActionRole);
-    allow->setIcon(QIcon::fromTheme(QStringLiteral("dialog-ok-apply")));
     auto *close = buttons->addButton(QDialogButtonBox::Close);
     layout->addWidget(buttons);
 
@@ -52,10 +50,6 @@ PreviewDialog::PreviewDialog(QWidget *parent)
     });
     connect(review, &QPushButton::clicked, this, [this] {
         emit reviewRequested(m_sourceRow);
-        accept();
-    });
-    connect(allow, &QPushButton::clicked, this, [this] {
-        emit allowRequested(m_sourceRow);
         accept();
     });
     connect(close, &QPushButton::clicked, this, &QDialog::reject);

@@ -28,11 +28,13 @@ a grid of flagged files:
 - **Click** a thumbnail to check/uncheck it.
 - **Ctrl+click** to enlarge it in a preview with its own action buttons.
 - Filter chips (`All flagged · Junk files · Exact dupes · Junk pages · Needs
-  review · Allowed · Clean`) switch between categories; sort by file contents
+  review · Colored · Clean`) switch between categories; sort by file contents
   (duplicate clusters end up adjacent), name, or size.
-- Actions: **Select all / Deselect all**, **Allow** (keep the file and stop
-  flagging it), **To review**, and **Move to Trash…** (always the system
-  trash, never a hard delete).
+- **Colored** lists every color image (covers, spreads, color credit pages),
+  whatever its category. Only the ones flagged as junk or duplicates arrive
+  checked.
+- Actions: **Select all / Deselect all**, **To review**, and **Move to
+  Trash…** (always the system trash, never a hard delete).
 
 Tips:
 

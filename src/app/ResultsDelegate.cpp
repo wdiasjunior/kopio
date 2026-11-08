@@ -24,7 +24,6 @@ BadgeStyle badgeFor(KopBucket b)
     case KopBucket::ExactDupes: return { QColor(0xf6, 0x74, 0x00), "dupe" };
     case KopBucket::JunkPages: return { QColor(0xe9, 0x3a, 0x9a), "junk" };
     case KopBucket::Review: return { QColor(0x24, 0x6f, 0xcd), "review" };
-    case KopBucket::Allowed: return { QColor(0x27, 0xae, 0x60), "ok" };
     default: return { QColor(0x7f, 0x8c, 0x8d), "" };
     }
 }
