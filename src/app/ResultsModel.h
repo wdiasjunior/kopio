@@ -23,6 +23,15 @@ enum class KopBucket {
     Count
 };
 
+// Which categories arrive checked after a scan (Settings menu). allFlagged
+// covers every non-clean category, including the ones that need review.
+struct KopPreselect {
+    bool allFlagged = false;
+    bool dupes = true;
+    bool junkFiles = true;
+    bool junkPages = true;
+};
+
 class ResultsModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -45,7 +54,7 @@ public:
 
     explicit ResultsModel(QObject *parent = nullptr);
 
-    void setEntries(const QVector<KopEntry> &entries);
+    void setEntries(const QVector<KopEntry> &entries, const KopPreselect &pre);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;

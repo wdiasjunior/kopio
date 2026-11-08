@@ -4,6 +4,7 @@
 #include <QCloseEvent>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSettings>
 #include <QStackedWidget>
 
 #include "GreetingPage.h"
@@ -48,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
                     m_stack->setCurrentWidget(m_greeting);
                     return;
                 }
-                m_results->setEntries(entries);
+                m_results->setEntries(entries, preselect());
                 m_stack->setCurrentWidget(m_results);
             });
 
@@ -68,6 +69,8 @@ MainWindow::MainWindow(QWidget *parent)
     // close() rather than qApp->quit() so Ctrl+Q also gets the closeEvent warning
     connect(quit, &QAction::triggered, this, &QWidget::close);
 
+    buildSettingsMenu();
+
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     QAction *about = helpMenu->addAction(tr("&About kopio"));
     connect(about, &QAction::triggered, this, [this] {
@@ -77,6 +80,50 @@ MainWindow::MainWindow(QWidget *parent)
                "Mihon leftovers in a manga library, and moves them to the trash.<br><br>"
                "Click a thumbnail to check it, Ctrl+click to preview it."));
     });
+}
+
+// Settings → which flagged files arrive checked after a scan. Choices are
+// saved with QSettings and take effect on the next scan.
+void MainWindow::buildSettingsMenu()
+{
+    QMenu *menu = menuBar()->addMenu(tr("&Settings"));
+    menu->addSection(tr("Pre-select after a scan"));
+    const KopPreselect defaults;
+    auto addOption = [this, menu](const QString &text, const QString &key, bool def) {
+        QAction *a = menu->addAction(text);
+        a->setCheckable(true);
+        a->setChecked(QSettings().value(key, def).toBool());
+        connect(a, &QAction::toggled, this,
+                [key](bool on) { QSettings().setValue(key, on); });
+        return a;
+    };
+    m_preAllFlagged = addOption(tr("Everything in \"All flagged\""),
+                                QStringLiteral("preselect/allFlagged"), defaults.allFlagged);
+    menu->addSeparator();
+    m_preDupes = addOption(tr("Duplicates"),
+                           QStringLiteral("preselect/dupes"), defaults.dupes);
+    m_preJunkFiles = addOption(tr("Junk files"),
+                               QStringLiteral("preselect/junkFiles"), defaults.junkFiles);
+    m_preJunkPages = addOption(tr("Junk images"),
+                               QStringLiteral("preselect/junkPages"), defaults.junkPages);
+
+    // "All flagged" already includes the other three; grey them out meanwhile
+    auto sync = [this](bool all) {
+        for (QAction *a : { m_preDupes, m_preJunkFiles, m_preJunkPages })
+            a->setEnabled(!all);
+    };
+    connect(m_preAllFlagged, &QAction::toggled, this, sync);
+    sync(m_preAllFlagged->isChecked());
+}
+
+KopPreselect MainWindow::preselect() const
+{
+    KopPreselect p;
+    p.allFlagged = m_preAllFlagged->isChecked();
+    p.dupes = m_preDupes->isChecked();
+    p.junkFiles = m_preJunkFiles->isChecked();
+    p.junkPages = m_preJunkPages->isChecked();
+    return p;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

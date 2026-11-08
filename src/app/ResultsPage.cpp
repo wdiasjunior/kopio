@@ -189,10 +189,10 @@ ResultsPage::ResultsPage(QWidget *parent)
     });
 }
 
-void ResultsPage::setEntries(const QVector<KopEntry> &entries)
+void ResultsPage::setEntries(const QVector<KopEntry> &entries, const KopPreselect &pre)
 {
     m_anchor = QPersistentModelIndex();
-    m_model->setEntries(entries);
+    m_model->setEntries(entries, pre);
     m_proxy->setSortMode(KopSortFilterProxy::SortMode::Content);
     resetScrollPositions();
     updateChips();

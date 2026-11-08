@@ -21,7 +21,7 @@ class ResultsPage : public QWidget
 public:
     explicit ResultsPage(QWidget *parent = nullptr);
 
-    void setEntries(const QVector<KopEntry> &entries);
+    void setEntries(const QVector<KopEntry> &entries, const KopPreselect &pre);
     int checkedCount() const { return m_model->checkedCount(); }
 
 signals:

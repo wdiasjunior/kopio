@@ -28,7 +28,7 @@ ResultsModel::ResultsModel(QObject *parent)
 {
 }
 
-void ResultsModel::setEntries(const QVector<KopEntry> &entries)
+void ResultsModel::setEntries(const QVector<KopEntry> &entries, const KopPreselect &pre)
 {
     beginResetModel();
     m_items.clear();
@@ -37,10 +37,13 @@ void ResultsModel::setEntries(const QVector<KopEntry> &entries)
         Item it;
         it.e = e;
         const KopCategory c = e.rec.category;
-        // deletion candidates arrive pre-checked; review/clean unchecked
-        it.check = (c == KOP_CAT_JUNK_FILE || c == KOP_CAT_EXACT_DUPE ||
-                    c == KOP_CAT_JUNK_PAGE)
-                       ? Qt::Checked : Qt::Unchecked;
+        // pre-check per the Settings menu; clean files never arrive checked
+        const bool flagged = bucketFor(c, KOP_ST_PENDING) != KopBucket::Clean;
+        const bool on = (pre.allFlagged && flagged) ||
+                        (pre.dupes && c == KOP_CAT_EXACT_DUPE) ||
+                        (pre.junkFiles && c == KOP_CAT_JUNK_FILE) ||
+                        (pre.junkPages && c == KOP_CAT_JUNK_PAGE);
+        it.check = on ? Qt::Checked : Qt::Unchecked;
         m_items.append(it);
     }
     m_thumbCache.clear();
