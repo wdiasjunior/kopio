@@ -167,7 +167,10 @@ ResultsPage::ResultsPage(QWidget *parent)
 
     auto *rescan = new QPushButton(QIcon::fromTheme(QStringLiteral("go-home")),
                                    tr("New scan"), this);
-    connect(rescan, &QPushButton::clicked, this, &ResultsPage::newScanRequested);
+    connect(rescan, &QPushButton::clicked, this, [this] {
+        resetScrollPositions();
+        emit newScanRequested();
+    });
     actionRow->addWidget(rescan);
 
     layout->addLayout(actionRow);
@@ -189,9 +192,9 @@ ResultsPage::ResultsPage(QWidget *parent)
 void ResultsPage::setEntries(const QVector<KopEntry> &entries)
 {
     m_anchor = QPersistentModelIndex();
-    m_scrollPos.fill(0);
     m_model->setEntries(entries);
     m_proxy->setSortMode(KopSortFilterProxy::SortMode::Content);
+    resetScrollPositions();
     updateChips();
     updateStatusLine();
 
@@ -199,6 +202,13 @@ void ResultsPage::setEntries(const QVector<KopEntry> &entries)
     if (qEnvironmentVariableIntValue("KOPIO_PREVIEW") && m_proxy->rowCount() > 0) {
         openPreview(m_proxy->mapToSource(m_proxy->index(0, 0)));
     }
+}
+
+// forget every tab's scroll offset and put the current one back at the top
+void ResultsPage::resetScrollPositions()
+{
+    m_scrollPos.fill(0);
+    m_view->scrollToTop();
 }
 
 void ResultsPage::updateChips()

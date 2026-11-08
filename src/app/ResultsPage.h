@@ -27,6 +27,7 @@ signals:
     void newScanRequested();
 
 private:
+    void resetScrollPositions();
     void updateChips();
     void updateStatusLine();
     void selectAllVisible(bool checked);
