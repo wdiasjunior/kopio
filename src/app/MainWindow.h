@@ -16,8 +16,10 @@ public:
 
     void startScan(const QString &dir);
 
-private:
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
+private:
     QStackedWidget *m_stack = nullptr;
     GreetingPage *m_greeting = nullptr;
     ScanPage *m_scan = nullptr;

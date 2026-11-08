@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QStackedWidget>
@@ -64,7 +65,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction *quit = fileMenu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")),
                                         tr("&Quit"));
     quit->setShortcut(QKeySequence::Quit);
-    connect(quit, &QAction::triggered, qApp, &QApplication::quit);
+    // close() rather than qApp->quit() so Ctrl+Q also gets the closeEvent warning
+    connect(quit, &QAction::triggered, this, &QWidget::close);
 
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
     QAction *about = helpMenu->addAction(tr("&About kopio"));
@@ -75,6 +77,24 @@ MainWindow::MainWindow(QWidget *parent)
                "Mihon leftovers in a manga library, and moves them to the trash.<br><br>"
                "Click a thumbnail to check it, Ctrl+click to preview it."));
     });
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // checked files on the results screen haven't been trashed yet
+    const int checked = m_results->checkedCount();
+    if (m_stack->currentWidget() == m_results && checked > 0) {
+        const auto answer = QMessageBox::warning(
+            this, tr("Quit kopio?"),
+            tr("%n checked file(s) haven't been moved to the trash yet.\n"
+               "Quit anyway?", nullptr, checked),
+            QMessageBox::Close | QMessageBox::Cancel, QMessageBox::Cancel);
+        if (answer != QMessageBox::Close) {
+            event->ignore();
+            return;
+        }
+    }
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::startScan(const QString &dir)

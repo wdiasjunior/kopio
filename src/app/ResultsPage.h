@@ -22,6 +22,7 @@ public:
     explicit ResultsPage(QWidget *parent = nullptr);
 
     void setEntries(const QVector<KopEntry> &entries);
+    int checkedCount() const { return m_model->checkedCount(); }
 
 signals:
     void newScanRequested();
