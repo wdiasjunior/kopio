@@ -76,7 +76,8 @@ int main(int argc, char *argv[])
             entries[i].rec = recs[i];
     }
 
-    out << "path\tkind\twidth\theight\taspect\tbytes\tbpp\tcolor\twhite\tink\tedge\tuniq\tborder\tdhash";
+    out << "path\tkind\twidth\theight\taspect\tbytes\tbpp\tcolor\twhite\tink\tedge\tuniq\tborder"
+           "\tblank_rows\tgutters\tdark_rows\ttwo_tone\tdhash";
     if (classify)
         out << "\tcategory\tscore\tdupe_group\tsim_cluster\treasons";
     out << "\n";
@@ -95,6 +96,10 @@ int main(int argc, char *argv[])
             << QString::number(r.m.edge_density, 'f', 4) << '\t'
             << r.m.unique_colors << '\t'
             << QString::number(r.m.border_white, 'f', 3) << '\t'
+            << QString::number(r.m.blank_rows, 'f', 4) << '\t'
+            << QString::number(r.m.white_gutters, 'f', 4) << '\t'
+            << QString::number(r.m.dark_rows, 'f', 4) << '\t'
+            << QString::number(r.m.two_tone, 'f', 4) << '\t'
             << QString::number(r.dhash, 16);
         if (classify) {
             out << '\t' << categoryName(r.category) << '\t'

@@ -102,6 +102,27 @@ static void test_metrics(void)
     }
     CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
     CHECK(m.is_color);
+    CHECK(m.dark_rows > 0.99f && m.blank_rows < 0.01f); /* red's luma is 76: dark */
+
+    /* credit-page layout: black text bands on white, every 4th row inked */
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            uint8_t v = (y % 4 == 0 && x > 20 && x < 80) ? 0 : 255;
+            uint8_t *p = rgba + ((size_t)y * w + x) * 4;
+            p[0] = p[1] = p[2] = v; p[3] = 255;
+        }
+    CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
+    CHECK(m.blank_rows > 0.7f && m.blank_rows < 0.8f);
+    CHECK(m.white_gutters > 0.7f && m.dark_rows < 0.01f);
+    CHECK(m.two_tone > 0.99f);
+
+    /* mid-gray screentone everywhere: no blank or dark bands, not two-tone */
+    for (long i = 0; i < (long)w * h; i++) {
+        uint8_t *p = rgba + i * 4;
+        p[0] = p[1] = p[2] = (i & 1) ? 90 : 160; p[3] = 255;
+    }
+    CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
+    CHECK(m.white_gutters < 0.01f && m.dark_rows < 0.01f && m.two_tone < 0.01f);
     free(rgba);
 }
 
@@ -111,7 +132,7 @@ static void test_classify(void)
     KopClassifyParams p;
     kop_classify_defaults(&p);
 
-    enum { N = 28 };
+    enum { N = 30 };
     KopRecord r[N];
     memset(r, 0, sizeof r);
     for (int i = 0; i < N; i++) {
@@ -163,6 +184,11 @@ static void test_classify(void)
     /* 27: whitewashed blank whose bpp is too high for the old blank rule */
     r[27].m.white_ratio = 0.97f; r[27].m.ink_ratio = 0.02f;
     r[27].m.edge_density = 0.01f; r[27].m.unique_colors = 20;
+    /* 28: gray credit page: blank bands and white gutters -> junk */
+    r[28].m.blank_rows = 0.40f; r[28].m.white_gutters = 0.35f; r[28].m.two_tone = 0.90f;
+    /* 29: color page with the same layout -> only review (could be a cover) */
+    r[29].m.is_color = 1; r[29].m.blank_rows = 0.40f; r[29].m.white_gutters = 0.35f;
+    r[29].hdr.width = 1100; /* aspect 0.55: outside the cover guard zone */
 
     CHECK(kop_classify(r, N, &p) == 0);
 
@@ -182,6 +208,8 @@ static void test_classify(void)
     CHECK(r[25].category == KOP_CAT_JUNK_PAGE && (r[25].reasons & KOP_R_DARK_TEXT));
     CHECK(r[26].category == KOP_CAT_JUNK_PAGE && (r[26].reasons & KOP_R_FLAT_COLOR));
     CHECK(r[27].category == KOP_CAT_JUNK_PAGE && (r[27].reasons & KOP_R_BLANK));
+    CHECK(r[28].category == KOP_CAT_JUNK_PAGE && (r[28].reasons & KOP_R_LAYOUT));
+    CHECK(r[29].category == KOP_CAT_REVIEW && (r[29].reasons & KOP_R_LAYOUT));
 
     /* idempotent */
     CHECK(kop_classify(r, N, &p) == 0);

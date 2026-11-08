@@ -49,6 +49,38 @@ void kop_classify_defaults(KopClassifyParams *p)
     p->superflat_edge_max = 0.02f;
     p->blank2_white_min = 0.95f;
     p->blank2_edge_max = 0.035f;
+    /* page-layout signals (blank bands, white gutters, dark bands, two-tone
+       pixels). Real manga pages fill their rows with panels and screentone;
+       credit, recruitment and end pages are text blocks on empty bands.
+       Tuned on half of examples/junk-refinement and checked on the other
+       half. A gray page tripping two signals is junk; one signal, or any
+       color image (fan-colored panels look too much like covers), only goes
+       to review. On the labeled corpus this took unique (non-dupe) junk
+       flagged from 54% to 76% (tune) / 78% (holdout) on junk-refinement and
+       from ~50% to ~78% on the older junk set, with 0/568 keepers junked and
+       keepers in review unchanged at 2. */
+    p->layout_gray_blank_rows = 0.23f;
+    p->layout_gray_gutters = 0.20f;
+    p->layout_gray_dark_rows = 0.21f;
+    p->layout_gray_two_tone = 0.98f;
+    p->layout_color_blank_rows = 0.30f;
+    p->layout_color_gutters = 0.11f;
+    p->layout_color_dark_rows = 0.125f;
+    p->layout_color_two_tone = 0.84f;
+}
+
+/* How many page-layout junk signals an image trips. */
+static int layout_hits(const KopPixelMetrics *m, const KopClassifyParams *p)
+{
+    if (m->is_color)
+        return (m->blank_rows > p->layout_color_blank_rows) +
+               (m->white_gutters > p->layout_color_gutters) +
+               (m->dark_rows > p->layout_color_dark_rows) +
+               (m->two_tone > p->layout_color_two_tone);
+    return (m->blank_rows > p->layout_gray_blank_rows) +
+           (m->white_gutters > p->layout_gray_gutters) +
+           (m->dark_rows > p->layout_gray_dark_rows) +
+           (m->two_tone > p->layout_gray_two_tone);
 }
 
 static int is_image_kind(KopFileKind k)
@@ -328,6 +360,18 @@ int kop_classify(KopRecord *recs, int count, const KopClassifyParams *p)
                    r->sim_cluster < 0) {
             r->reasons |= KOP_R_TEXT_HEAVY;
             cat = KOP_CAT_REVIEW;
+        }
+
+        /* page-layout signals: only upgrade, never override a junk verdict */
+        if (cat != KOP_CAT_JUNK_PAGE) {
+            int hits = layout_hits(m, p);
+            if (hits >= 2 && !m->is_color && !guard) {
+                r->reasons |= KOP_R_LAYOUT;
+                cat = KOP_CAT_JUNK_PAGE;
+            } else if (hits >= 1) {
+                r->reasons |= KOP_R_LAYOUT;
+                cat = KOP_CAT_REVIEW;
+            }
         }
 
         r->category = cat;

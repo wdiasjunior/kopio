@@ -43,6 +43,12 @@ typedef struct {
     int   superflat_uniq_max;                 /* near-featureless pages */
     float superflat_edge_max;
     float blank2_white_min, blank2_edge_max;  /* blanks with high bpp */
+    /* page-layout rules, thresholds set separately for gray and color
+       images: each is the corpus keepers' maximum plus a 10% margin */
+    float layout_gray_blank_rows, layout_gray_gutters;
+    float layout_gray_dark_rows, layout_gray_two_tone;
+    float layout_color_blank_rows, layout_color_gutters;
+    float layout_color_dark_rows, layout_color_two_tone;
 } KopClassifyParams;
 
 void kop_classify_defaults(KopClassifyParams *p);

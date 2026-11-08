@@ -81,6 +81,31 @@ int kop_compute_metrics(const uint8_t *rgba, int w, int h, KopPixelMetrics *out)
     out->border_white = border_total ? (float)border_white / (float)border_total : 0.0f;
     out->is_color = (float)chroma / (float)n > 0.02f;
 
+    /* page layout: per-row dark/light/white counts */
+    long blank_rows = 0, dark_rows = 0, gutters = 0, inner_rows = 0, two_tone = 0;
+    int iy0 = sh / 10, iy1 = sh - sh / 10;
+    for (int y = 0; y < sh; y++) {
+        const uint8_t *row = gray + (long)y * sw;
+        long dark = 0, whiteish = 0;
+        for (int x = 0; x < sw; x++) {
+            uint8_t v = row[x];
+            if (v < 128) dark++;
+            if (v >= 235) whiteish++;
+            if (v < 40 || v > 215) two_tone++;
+        }
+        long light = sw - dark;
+        if (dark * 1000 < 5L * sw) blank_rows++;
+        if (light * 1000 < 5L * sw) dark_rows++;
+        if (y >= iy0 && y < iy1) {
+            inner_rows++;
+            if (whiteish * 100 > 97L * sw) gutters++;
+        }
+    }
+    out->blank_rows = (float)blank_rows / (float)sh;
+    out->dark_rows = (float)dark_rows / (float)sh;
+    out->white_gutters = inner_rows ? (float)gutters / (float)inner_rows : 0.0f;
+    out->two_tone = (float)two_tone / (float)n;
+
     free(gray);
     free(seen);
     return 0;

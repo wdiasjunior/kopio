@@ -190,6 +190,7 @@ QString reasonsText(uint32_t reasons)
     if (reasons & KOP_R_FLAT_COLOR) parts << QObject::tr("flat color page");
     if (reasons & KOP_R_DARK_TEXT) parts << QObject::tr("dark text page");
     if (reasons & KOP_R_LOW_DETAIL) parts << QObject::tr("flat low-detail page");
+    if (reasons & KOP_R_LAYOUT) parts << QObject::tr("credit/blank page layout");
     return parts.join(QStringLiteral(", "));
 }
 

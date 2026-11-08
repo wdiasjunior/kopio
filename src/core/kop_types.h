@@ -48,6 +48,7 @@ typedef enum {
 #define KOP_R_FLAT_COLOR   (1u << 10) /* flat color page: too few colors for real art */
 #define KOP_R_DARK_TEXT    (1u << 11) /* dark text-on-black page */
 #define KOP_R_LOW_DETAIL   (1u << 12) /* flat/low-detail page (title cards, logos) */
+#define KOP_R_LAYOUT       (1u << 13) /* blank bands / two-tone layout of credit pages */
 
 typedef struct {
     uint32_t width, height;
@@ -64,6 +65,12 @@ typedef struct {
     int   unique_colors;/* RGB444-quantized, capped at 4096 */
     float border_white; /* whiteness of the outer 5% frame */
     uint8_t is_color;   /* pixel-verified chroma present */
+    /* page-layout metrics: credit/recruitment/blank pages are text blocks
+       on empty bands, while manga pages fill rows with panels and tone */
+    float blank_rows;    /* rows with < 0.5% dark (gray < 128) pixels */
+    float white_gutters; /* inner 80% rows that are > 97% white (gray >= 235) */
+    float dark_rows;     /* rows with < 0.5% light (gray >= 128) pixels */
+    float two_tone;      /* pixels near pure black or white (< 40 or > 215) */
 } KopPixelMetrics;
 
 typedef struct {
