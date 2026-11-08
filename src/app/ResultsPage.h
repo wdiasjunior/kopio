@@ -1,6 +1,8 @@
 // Triage screen: filter chips, sortable thumbnail grid, and the action bar.
 #pragma once
 
+#include <array>
+
 #include <QPersistentModelIndex>
 #include <QWidget>
 
@@ -42,6 +44,9 @@ private:
     QLabel *m_statusLine = nullptr;
     QComboBox *m_sortCombo = nullptr;
     QVector<QToolButton *> m_chips; // indexed by KopBucket
+    KopBucket m_bucket = KopBucket::AllFlagged; // chip currently shown
+    // each chip's last vertical scroll offset, indexed by KopBucket
+    std::array<int, size_t(KopBucket::Count)> m_scrollPos {};
     // last plain-clicked card (source model) for Shift+click range select
     QPersistentModelIndex m_anchor;
 };

@@ -43,6 +43,14 @@ class GridView : public QListView
 public:
     using QListView::QListView;
 
+    // lay out the pending filter change first, so the scrollbar range fits
+    // the new rows before the offset is applied (QScrollBar clamps it)
+    void scrollToY(int y)
+    {
+        executeDelayedItemsLayout();
+        verticalScrollBar()->setValue(y);
+    }
+
 protected:
     void updateGeometries() override
     {
@@ -78,7 +86,11 @@ ResultsPage::ResultsPage(QWidget *parent)
     }
     m_chips[0]->setChecked(true);
     connect(chipGroup, &QButtonGroup::idClicked, this, [this](int id) {
-        m_proxy->setBucket(static_cast<KopBucket>(id));
+        // each chip keeps its own scroll position
+        m_scrollPos[size_t(m_bucket)] = m_view->verticalScrollBar()->value();
+        m_bucket = static_cast<KopBucket>(id);
+        m_proxy->setBucket(m_bucket);
+        static_cast<GridView *>(m_view)->scrollToY(m_scrollPos[size_t(id)]);
         updateStatusLine();
     });
     chipRow->addStretch();
@@ -89,6 +101,7 @@ ResultsPage::ResultsPage(QWidget *parent)
     m_sortCombo->addItem(tr("Name"), int(KopSortFilterProxy::SortMode::Name));
     m_sortCombo->addItem(tr("File size"), int(KopSortFilterProxy::SortMode::Size));
     connect(m_sortCombo, &QComboBox::currentIndexChanged, this, [this](int) {
+        m_scrollPos.fill(0); // saved offsets point into the old order
         m_proxy->setSortMode(static_cast<KopSortFilterProxy::SortMode>(
             m_sortCombo->currentData().toInt()));
     });
@@ -176,6 +189,7 @@ ResultsPage::ResultsPage(QWidget *parent)
 void ResultsPage::setEntries(const QVector<KopEntry> &entries)
 {
     m_anchor = QPersistentModelIndex();
+    m_scrollPos.fill(0);
     m_model->setEntries(entries);
     m_proxy->setSortMode(KopSortFilterProxy::SortMode::Content);
     updateChips();
