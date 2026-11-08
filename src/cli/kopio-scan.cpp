@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("kopio-scan"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.2"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.2.1"));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(

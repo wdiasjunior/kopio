@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
         QIcon::setFallbackThemeName(QStringLiteral("breeze"));
     QCoreApplication::setApplicationName(QStringLiteral("kopio"));
     QCoreApplication::setOrganizationName(QStringLiteral("kopio"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.2"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("0.2.1"));
 
     MainWindow win;
     win.show();
