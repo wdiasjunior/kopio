@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     }
 
     out << "path\tkind\twidth\theight\taspect\tbytes\tbpp\tcolor\twhite\tink\tedge\tuniq\tborder"
-           "\tblank_rows\tgutters\tdark_rows\ttwo_tone\tdhash";
+           "\tblank_rows\tgutters\tdark_rows\ttwo_tone\tcoverage\tdhash";
     if (classify)
         out << "\tcategory\tscore\tdupe_group\tsim_cluster\treasons";
     out << "\n";
@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
             << QString::number(r.m.white_gutters, 'f', 4) << '\t'
             << QString::number(r.m.dark_rows, 'f', 4) << '\t'
             << QString::number(r.m.two_tone, 'f', 4) << '\t'
+            << QString::number(r.m.coverage, 'f', 4) << '\t'
             << QString::number(r.dhash, 16);
         if (classify) {
             out << '\t' << categoryName(r.category) << '\t'

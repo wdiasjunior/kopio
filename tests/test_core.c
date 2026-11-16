@@ -84,6 +84,7 @@ static void test_metrics(void)
     CHECK(m.white_ratio > 0.99f && m.ink_ratio < 0.01f && !m.is_color);
     CHECK(m.edge_density < 0.001f && m.border_white > 0.99f);
     CHECK(m.unique_colors == 1);
+    CHECK(m.coverage < 0.001f);
 
     /* checkerboard black/white */
     for (int y = 0; y < h; y++)
@@ -94,6 +95,7 @@ static void test_metrics(void)
         }
     CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
     CHECK(m.edge_density > 0.3f && !m.is_color);
+    CHECK(m.coverage > 0.99f);
 
     /* solid red = color */
     for (long i = 0; i < (long)w * h; i++) {
@@ -124,6 +126,22 @@ static void test_metrics(void)
     CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
     CHECK(m.white_gutters < 0.01f && m.dark_rows < 0.01f && m.two_tone < 0.01f);
     free(rgba);
+
+    /* thin 1-px line art on a large page: the nearest-neighbor sample skips
+     * every line (they sit between sampled columns/rows), the box-filtered
+     * coverage sample keeps them */
+    w = h = 2048;
+    rgba = malloc((size_t)w * h * 4);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            uint8_t v = (x % 32 == 3 || y % 32 == 3) ? 0 : 255;
+            uint8_t *p = rgba + ((size_t)y * w + x) * 4;
+            p[0] = p[1] = p[2] = v; p[3] = 255;
+        }
+    CHECK(kop_compute_metrics(rgba, w, h, &m) == 0);
+    CHECK(m.edge_density < 0.001f && m.white_ratio > 0.99f);
+    CHECK(m.coverage > 0.9f);
+    free(rgba);
 }
 
 /* Build a synthetic catalog and check grouping + frequency + heuristics. */
@@ -132,7 +150,7 @@ static void test_classify(void)
     KopClassifyParams p;
     kop_classify_defaults(&p);
 
-    enum { N = 30 };
+    enum { N = 33 };
     KopRecord r[N];
     memset(r, 0, sizeof r);
     for (int i = 0; i < N; i++) {
@@ -189,6 +207,13 @@ static void test_classify(void)
     /* 29: color page with the same layout -> only review (could be a cover) */
     r[29].m.is_color = 1; r[29].m.blank_rows = 0.40f; r[29].m.white_gutters = 0.35f;
     r[29].hdr.width = 1100; /* aspect 0.55: outside the cover guard zone */
+    /* 30: same layout as 28 but drawn all over (clean digital manga) -> review */
+    r[30].m.blank_rows = 0.40f; r[30].m.white_gutters = 0.35f; r[30].m.two_tone = 0.90f;
+    r[30].m.coverage = 0.60f;
+    /* 31: color page busier than any cover (textured recruitment page) */
+    r[31].m.is_color = 1; r[31].m.edge_density = 0.20f;
+    /* 32: near-black gray page, below the dark-text rule's ink cutoff */
+    r[32].m.ink_ratio = 0.95f; r[32].m.white_ratio = 0.02f;
 
     CHECK(kop_classify(r, N, &p) == 0);
 
@@ -210,6 +235,9 @@ static void test_classify(void)
     CHECK(r[27].category == KOP_CAT_JUNK_PAGE && (r[27].reasons & KOP_R_BLANK));
     CHECK(r[28].category == KOP_CAT_JUNK_PAGE && (r[28].reasons & KOP_R_LAYOUT));
     CHECK(r[29].category == KOP_CAT_REVIEW && (r[29].reasons & KOP_R_LAYOUT));
+    CHECK(r[30].category == KOP_CAT_REVIEW && (r[30].reasons & KOP_R_LAYOUT));
+    CHECK(r[31].category == KOP_CAT_REVIEW && (r[31].reasons & KOP_R_ATYPICAL));
+    CHECK(r[32].category == KOP_CAT_REVIEW && (r[32].reasons & KOP_R_ATYPICAL));
 
     /* idempotent */
     CHECK(kop_classify(r, N, &p) == 0);

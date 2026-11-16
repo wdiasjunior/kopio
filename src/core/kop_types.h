@@ -49,6 +49,7 @@ typedef enum {
 #define KOP_R_DARK_TEXT    (1u << 11) /* dark text-on-black page */
 #define KOP_R_LOW_DETAIL   (1u << 12) /* flat/low-detail page (title cards, logos) */
 #define KOP_R_LAYOUT       (1u << 13) /* blank bands / two-tone layout of credit pages */
+#define KOP_R_ATYPICAL     (1u << 14) /* outside every labeled page/cover's range */
 
 typedef struct {
     uint32_t width, height;
@@ -71,6 +72,7 @@ typedef struct {
     float white_gutters; /* inner 80% rows that are > 97% white (gray >= 235) */
     float dark_rows;     /* rows with < 0.5% light (gray >= 128) pixels */
     float two_tone;      /* pixels near pure black or white (< 40 or > 215) */
+    float coverage;      /* 16x16 blocks with edges, on a 512 px box-filtered sample */
 } KopPixelMetrics;
 
 typedef struct {

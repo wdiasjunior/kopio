@@ -7,6 +7,79 @@
  * on the long edge, which keeps the cost independent of source resolution. */
 #define SW 256
 
+/* Drawing coverage: fraction of 16x16 blocks that contain edges, measured on
+ * a box-filtered (area-averaged) gray image of at most CW pixels on the long
+ * edge. Unlike the nearest-neighbor sample, box filtering keeps thin line
+ * art and panel borders of clean digital pages, which tell real drawn pages
+ * apart from mostly empty credit/blank pages. Returns -1 on allocation
+ * failure. */
+#define CW 512
+#define COV_BLOCK 16
+#define COV_EDGE 40
+
+static int compute_coverage(const uint8_t *rgba, int w, int h, float *out)
+{
+    int cw, ch;
+    if (w >= h) { cw = w < CW ? w : CW; ch = (int)((long)h * cw / w); }
+    else        { ch = h < CW ? h : CW; cw = (int)((long)w * ch / h); }
+    if (cw < 1) cw = 1;
+    if (ch < 1) ch = 1;
+    *out = 0.0f;
+
+    uint8_t *g = malloc((size_t)cw * ch);
+    uint32_t *acc = calloc((size_t)cw, sizeof(uint32_t));
+    uint32_t *cnt = calloc((size_t)cw, sizeof(uint32_t));
+    int *xmap = malloc((size_t)w * sizeof(int));
+    if (!g || !acc || !cnt || !xmap) { free(g); free(acc); free(cnt); free(xmap); return -1; }
+    for (int x = 0; x < w; x++) xmap[x] = (int)((long)x * cw / w);
+
+    int oy = 0;
+    for (int y = 0; y < h; y++) {
+        const uint8_t *p = rgba + (long)y * w * 4;
+        for (int x = 0; x < w; x++, p += 4) {
+            int ox = xmap[x];
+            acc[ox] += (uint32_t)((77 * p[0] + 150 * p[1] + 29 * p[2]) >> 8);
+            cnt[ox]++;
+        }
+        int next = (y + 1 < h) ? (int)((long)(y + 1) * ch / h) : ch;
+        if (next != oy) {
+            uint8_t *row = g + (long)oy * cw;
+            for (int x = 0; x < cw; x++) {
+                row[x] = cnt[x] ? (uint8_t)(acc[x] / cnt[x]) : 255;
+                acc[x] = cnt[x] = 0;
+            }
+            oy = next;
+        }
+    }
+
+    int bw = (cw - 1) / COV_BLOCK, bh = (ch - 1) / COV_BLOCK;
+    if (bw > 0 && bh > 0) {
+        long covered = 0;
+        for (int by = 0; by < bh; by++) {
+            for (int bx = 0; bx < bw; bx++) {
+                int edges = 0;
+                for (int y = by * COV_BLOCK; y < (by + 1) * COV_BLOCK; y++) {
+                    const uint8_t *row = g + (long)y * cw;
+                    for (int x = bx * COV_BLOCK; x < (bx + 1) * COV_BLOCK; x++) {
+                        if (abs(row[x + 1] - row[x]) > COV_EDGE ||
+                            abs(row[x + cw] - row[x]) > COV_EDGE)
+                            edges++;
+                    }
+                }
+                /* > 2% of the block's 256 pixels */
+                if (edges * 50 > COV_BLOCK * COV_BLOCK) covered++;
+            }
+        }
+        *out = (float)covered / (float)((long)bw * bh);
+    }
+
+    free(g);
+    free(acc);
+    free(cnt);
+    free(xmap);
+    return 0;
+}
+
 int kop_compute_metrics(const uint8_t *rgba, int w, int h, KopPixelMetrics *out)
 {
     memset(out, 0, sizeof(*out));
@@ -108,5 +181,5 @@ int kop_compute_metrics(const uint8_t *rgba, int w, int h, KopPixelMetrics *out)
 
     free(gray);
     free(seen);
-    return 0;
+    return compute_coverage(rgba, w, h, &out->coverage);
 }

@@ -49,6 +49,13 @@ typedef struct {
     float layout_gray_dark_rows, layout_gray_two_tone;
     float layout_color_blank_rows, layout_color_gutters;
     float layout_color_dark_rows, layout_color_two_tone;
+    /* drawn-page veto: a gray page junked only by soft rules (layout,
+       low-detail, text-heavy) with at least this much drawing coverage goes
+       to review instead */
+    float drawn_cov_review;
+    /* atypical pages, review only: color images busier or whiter than any
+       labeled cover, gray pages darker than any labeled manga page */
+    float atypical_color_edge, atypical_color_white, atypical_gray_ink;
 } KopClassifyParams;
 
 void kop_classify_defaults(KopClassifyParams *p);

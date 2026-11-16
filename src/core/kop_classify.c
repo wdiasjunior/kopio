@@ -67,9 +67,31 @@ void kop_classify_defaults(KopClassifyParams *p)
     p->layout_color_gutters = 0.11f;
     p->layout_color_dark_rows = 0.125f;
     p->layout_color_two_tone = 0.84f;
+    /* clean digital manga (pure white, thin crisp lines, open panels) trips
+       the soft rules above: the 256 px nearest-neighbor sample drops its
+       line art, so it looks flat and banded like a credit page. Drawing
+       coverage on a box-filtered sample keeps the lines: the 35 pages in
+       examples/manga-refinement are all >= 0.27, while most junk caught by
+       these rules is far below. No threshold separates the two cleanly (the
+       overlap is wide), so a covered page goes to review, never to clean:
+       this rescued 35/35 of those pages from junk, kept 0 keepers junked,
+       and lost no junk to clean (about 150 junk files moved junk -> review). */
+    p->drawn_cov_review = 0.25f;
+    /* clean images outside every keeper's range (keeper max plus a ~10%
+       margin): textured/noisy color recruitment pages and photos (keeper
+       edge max 0.129), mostly white color pages (keeper white max 0.62),
+       near-black gray pages (keeper ink max 0.82). Review only: about 45
+       more junk files flagged per corpus half, keepers unchanged. */
+    p->atypical_color_edge = 0.14f;
+    p->atypical_color_white = 0.69f;
+    p->atypical_gray_ink = 0.90f;
 }
 
 /* How many page-layout junk signals an image trips. */
+/* reasons that only suggest junk; a page junked by these alone can be
+ * vetoed by drawing coverage */
+#define SOFT_REASONS (KOP_R_LAYOUT | KOP_R_LOW_DETAIL | KOP_R_TEXT_HEAVY | KOP_R_COLOR_GUARD)
+
 static int layout_hits(const KopPixelMetrics *m, const KopClassifyParams *p)
 {
     if (m->is_color)
@@ -373,6 +395,20 @@ int kop_classify(KopRecord *recs, int count, const KopClassifyParams *p)
                 cat = KOP_CAT_REVIEW;
             }
         }
+
+        if (cat == KOP_CAT_CLEAN &&
+            (m->is_color ? (m->edge_density > p->atypical_color_edge ||
+                            m->white_ratio > p->atypical_color_white)
+                         : m->ink_ratio > p->atypical_gray_ink)) {
+            r->reasons |= KOP_R_ATYPICAL;
+            cat = KOP_CAT_REVIEW;
+        }
+
+        /* drawn-page veto: the soft rules can't junk a page with real
+         * line art all over it, only send it to review */
+        if (cat == KOP_CAT_JUNK_PAGE && !m->is_color &&
+            (r->reasons & ~SOFT_REASONS) == 0 && m->coverage >= p->drawn_cov_review)
+            cat = KOP_CAT_REVIEW;
 
         r->category = cat;
     }
